@@ -8,26 +8,126 @@
     @apply bg-zelda-darker text-white;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    font-family: 'Noto Sans SC', system-ui, -apple-system, sans-serif;
   }
   * {
     -webkit-tap-highlight-color: transparent;
   }
 }
 
+/* ========== 全局动画库 ========== */
+
+/* 卡片入场 - 从下方滑入 + 渐显 */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.anim-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* 卡片入场 - 从左侧滑入 */
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.anim-slide-left {
+  animation: slideLeft 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* 交错动画延迟工具类 */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* 渐变呼吸光效 */
+@keyframes breatheGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.15), 0 4px 15px rgba(245, 158, 11, 0.1); }
+  50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.3), 0 4px 25px rgba(245, 158, 11, 0.2); }
+}
+.anim-breathe-gold {
+  animation: breatheGlow 3s ease-in-out infinite;
+}
+
+@keyframes breatheGreen {
+  0%, 100% { box-shadow: 0 0 15px rgba(52, 211, 153, 0.15); }
+  50% { box-shadow: 0 0 25px rgba(52, 211, 153, 0.3); }
+}
+.anim-breathe-green {
+  animation: breatheGreen 3s ease-in-out infinite;
+}
+
+/* 脉冲缩放 */
+@keyframes pulse-soft {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+.anim-pulse {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* 弹性点击效果 */
+@keyframes pressIn {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+.anim-press:active {
+  animation: pressIn 0.3s ease;
+}
+
+/* 数字滚动效果 */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.anim-count {
+  animation: countUp 0.3s ease-out;
+}
+
+/* 路由过渡动画 */
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slide-left-enter-from { transform: translateX(30px); opacity: 0; }
+.slide-left-leave-to { transform: translateX(-30px); opacity: 0; }
+.slide-right-enter-from { transform: translateX(-30px); opacity: 0; }
+.slide-right-leave-to { transform: translateX(30px); opacity: 0; }
+
+/* 成功闪光 */
+@keyframes successFlash {
+  0% { background: rgba(52, 211, 153, 0); }
+  50% { background: rgba(52, 211, 153, 0.15); }
+  100% { background: rgba(52, 211, 153, 0); }
+}
+.anim-success-flash {
+  animation: successFlash 0.8s ease-out;
+}
+
+/* ========== 组件样式 ========== */
+
 @layer components {
   .btn-primary {
     @apply bg-gradient-to-r from-zelda-primary to-blue-400 text-white font-bold py-3 px-6 rounded-xl
-           shadow-lg shadow-blue-500/30 transition-transform;
+           shadow-lg shadow-blue-500/30 transition-all duration-200;
   }
   .btn-primary:active {
-    transform: scale(0.97);
+    transform: scale(0.95);
+    box-shadow: none;
   }
   .btn-gold {
     @apply bg-gradient-to-r from-yellow-500 to-amber-400 text-zelda-dark font-bold py-3 px-6 rounded-xl
-           shadow-lg shadow-amber-500/30 transition-transform;
+           shadow-lg shadow-amber-500/30 transition-all duration-200;
   }
   .btn-gold:active {
-    transform: scale(0.97);
+    transform: scale(0.95);
+    box-shadow: none;
   }
   .card-dark {
     @apply bg-slate-800/80 backdrop-blur rounded-2xl p-4 border border-white/[0.08];
@@ -44,22 +144,20 @@
   .hp-heart.lost {
     @apply text-gray-600 scale-75;
   }
-}
-
-/* Global design tokens */
-@layer components {
   .btn-interactive {
-    transition: transform 0.15s ease, opacity 0.15s ease;
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, box-shadow 0.2s ease;
   }
   .btn-interactive:active {
-    transform: scale(0.97);
+    transform: scale(0.95) !important;
+    box-shadow: none !important;
   }
   .safe-bottom {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 }
 
-/* Star burst animation */
+/* ========== 特效动画 ========== */
+
 @keyframes starBurst {
   0% { transform: scale(0); opacity: 1; }
   50% { transform: scale(1.5); opacity: 0.8; }
@@ -69,7 +167,6 @@
   animation: starBurst 0.4s ease-out;
 }
 
-/* Damage number float */
 @keyframes damageFloat {
   0% { transform: translateY(0); opacity: 1; }
   100% { transform: translateY(-60px); opacity: 0; }
@@ -78,11 +175,74 @@
   animation: damageFloat 1s ease-out forwards;
 }
 
-/* Chest open glow */
 @keyframes chestGlow {
   0%, 100% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
   50% { box-shadow: 0 0 40px rgba(251, 191, 36, 0.8), 0 0 60px rgba(251, 191, 36, 0.4); }
 }
 .chest-glow {
   animation: chestGlow 1.5s ease-in-out infinite;
+}
+
+/* Boss受击震动 */
+@keyframes shakeBoss {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px) rotate(-2deg); }
+ 40% { transform: translateX(8px) rotate(2deg); }
+  60% { transform: translateX(-4px) rotate(-1deg); }
+  80% { transform: translateX(4px) rotate(1deg); }
+}
+.animate-shake {
+  animation: shakeBoss 0.5s ease-in-out;
+}
+
+/* Boss入场 */
+@keyframes bossEntrance {
+  0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  60% { transform: scale(1.1) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.animate-boss-entrance {
+  animation: bossEntrance 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* 慢速浮动 */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.animate-bounce-slow {
+  animation: floatSlow 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-25%); }
+}
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+/* 光泽扫过效果 */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* 玻除列表默认样式，让动画更顺滑 */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }

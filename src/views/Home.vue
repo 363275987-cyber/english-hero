@@ -180,55 +180,79 @@ const greetingText = computed(() => {
 
 .section-title { font-size: 16px; font-weight: 700; color: #e2e8f0; margin-bottom: 12px; }
 
-.greeting-section { text-align: center; padding: 20px 0 8px; }
-.newbie-banner { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.08)); border: 1px solid rgba(245,158,11,0.2); border-radius: 16px; padding: 20px 16px; }
-.newbie-text { font-size: 18px; font-weight: 800; color: #fbbf24; margin: 0 0 6px; }
-.newbie-hint { font-size: 14px; color: #cbd5e1; margin: 0; }
-.fairy-avatar { font-size: 56px; line-height: 1; margin-bottom: 12px; filter: drop-shadow(0 0 16px rgba(52, 211, 153, 0.5)); }
+.greeting-section { text-align: center; padding: 16px 0 4px; }
+.newbie-banner { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.08)); border: 1px solid rgba(245,158,11,0.2); border-radius: 16px; padding: 24px 16px; animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.newbie-text { font-size: 20px; font-weight: 900; color: #fbbf24; margin: 0 0 8px; }
+.newbie-hint { font-size: 14px; color: #cbd5e1; margin: 0; line-height: 1.5; }
+.fairy-avatar { font-size: 56px; line-height: 1; margin-bottom: 12px; filter: drop-shadow(0 0 16px rgba(52, 211, 153, 0.5)); animation: float 3s ease-in-out infinite; }
 .greeting-text { font-size: 18px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
 .greeting-sub { font-size: 13px; color: rgba(226, 232, 240, 0.6); }
 
-.level-section { padding: 16px; }
+/* 等级区 - 带呼吸光效 */
+.level-section { padding: 16px; animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: 0.05s; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; }
 .level-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .level-badge { font-size: 15px; font-weight: 700; color: #fbbf24; }
 .level-xp-text { font-size: 13px; color: rgba(226, 232, 240, 0.6); }
 .xp-bar-track { width: 100%; height: 10px; background: rgba(255, 255, 255, 0.08); border-radius: 5px; overflow: hidden; }
-.xp-bar-fill { height: 100%; background: linear-gradient(90deg, #34d399, #6ee7b7); border-radius: 5px; transition: width 0.6s ease; box-shadow: 0 0 8px rgba(52, 211, 153, 0.4); }
+.xp-bar-fill { height: 100%; background: linear-gradient(90deg, #34d399, #6ee7b7); border-radius: 5px; transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 0 0 10px rgba(52, 211, 153, 0.4); position: relative; }
+.xp-bar-fill::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 30px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3)); border-radius: 0 5px 5px 0; }
 .level-hint { font-size: 12px; color: rgba(226, 232, 240, 0.45); margin-top: 6px; }
 .level-hint strong { color: #34d399; }
 
+/* 任务区 */
+.tasks-section { animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: 0.1s; }
 .task-list { display: flex; flex-direction: column; gap: 10px; }
-.task-card { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; transition: all 0.2s ease; }
-.task-card:active { transform: scale(0.97); background: rgba(30, 41, 59, 0.95); }
-.task-card.completed { opacity: 0.5; }
+.task-card { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1); border-radius: 16px; }
+.task-card:not(.completed):hover { background: rgba(30, 41, 59, 0.9); }
+.task-card:active { transform: scale(0.97); }
+.task-card.completed { opacity: 0.4; }
 .task-left { display: flex; align-items: center; gap: 12px; }
-.task-status { font-size: 20px; line-height: 1; }
+.task-status { font-size: 20px; line-height: 1; transition: transform 0.3s ease; }
+.task-card.completed .task-status { transform: scale(1.2); }
 .task-info { display: flex; flex-direction: column; gap: 2px; }
 .task-name { font-size: 14px; font-weight: 600; color: #e2e8f0; }
 .task-progress { font-size: 12px; color: rgba(226, 232, 240, 0.5); }
 .task-reward { font-size: 13px; font-weight: 600; color: #fbbf24; white-space: nowrap; }
 
+/* 快捷入口 - 更有活力 */
+.quick-section { animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: 0.15s; }
 .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.quick-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 12px; border: none; border-radius: 16px; cursor: pointer; transition: all 0.2s ease; color: white; font-family: inherit; }
-.quick-btn:active { transform: scale(0.97); }
-.continue-btn { background: linear-gradient(135deg, #1a73e8, #60a5fa); box-shadow: 0 4px 16px rgba(26, 115, 232, 0.3); grid-column: 1 / -1; }
-.weapon-btn { background: linear-gradient(135deg, #ef4444, #f87171); box-shadow: 0 4px 16px rgba(239, 68, 68, 0.25); }
-.quick-icon { font-size: 28px; line-height: 1; }
+.quick-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 12px; border: none; border-radius: 16px; cursor: pointer; transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1); color: white; font-family: inherit; position: relative; overflow: hidden; }
+.quick-btn::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 50%); pointer-events: none; }
+.quick-btn:active { transform: scale(0.95); }
+.continue-btn { background: linear-gradient(135deg, #7c3aed, #a78bfa); box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35), 0 0 0 1px rgba(124, 58, 237, 0.3); grid-column: 1 / -1; }
+.continue-btn:hover { box-shadow: 0 6px 25px rgba(124, 58, 237, 0.45), 0 0 0 1px rgba(124, 58, 237, 0.3); }
+.review-btn { background: linear-gradient(135deg, #059669, #34d399); box-shadow: 0 4px 20px rgba(5, 150, 105, 0.3), 0 0 0 1px rgba(5, 150, 105, 0.25); }
+.weapon-btn { background: linear-gradient(135deg, #dc2626, #f87171); box-shadow: 0 4px 20px rgba(220, 38, 38, 0.3), 0 0 0 1px rgba(220, 38, 38, 0.25); }
+.quick-icon { font-size: 28px; line-height: 1; transition: transform 0.3s ease; }
+.quick-btn:active .quick-icon { transform: scale(1.15) rotate(-5deg); }
 .quick-label { font-size: 14px; font-weight: 700; }
 
+/* 统计区 */
+.stats-section { animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: 0.2s; }
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.stat-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px; text-align: center; }
+.stat-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 8px; text-align: center; transition: transform 0.2s ease; }
+.stat-card:active { transform: scale(0.97); }
 .stat-icon { font-size: 24px; line-height: 1; }
-.stat-value { font-size: 22px; font-weight: 900; color: #f1f5f9; }
+.stat-value { font-size: 24px; font-weight: 900; color: #f1f5f9; letter-spacing: -0.5px; }
 .stat-label { font-size: 11px; color: rgba(226, 232, 240, 0.5); }
 
-.more-section { }
+/* 更多功能 */
+.more-section { animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: 0.25s; }
 .more-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.more-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.15s ease; color: white; font-family: inherit; }
-.more-btn:active { transform: scale(0.97); }
-.more-icon { font-size: 22px; }
+.more-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1); color: white; font-family: inherit; }
+.more-btn:active { transform: scale(0.93); background: rgba(255,255,255,0.08); }
+.more-icon { font-size: 22px; transition: transform 0.3s ease; }
+.more-btn:active .more-icon { transform: scale(1.2) rotate(10deg); }
 .more-label { font-size: 11px; font-weight: 600; color: #94a3b8; }
 
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-.animate-float { animation: float 3s ease-in-out infinite; }
+/* 动画定义 */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
 </style>

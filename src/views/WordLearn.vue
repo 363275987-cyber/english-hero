@@ -16,10 +16,10 @@
     </div>
 
     <!-- Word Card -->
-    <div class="word-card" v-if="currentWord">
+    <div class="word-card" v-if="currentWord" :key="currentWord.id">
       <!-- Image area -->
       <div class="image-area" :style="{ background: moduleInfo.gradient }">
-        <span class="word-emoji">{{ getEmoji(currentWord) }}</span>
+        <span class="word-emoji" :key="currentWord.word">{{ getEmoji(currentWord) }}</span>
         <p class="image-desc">{{ currentWord.funImage || '记忆这个单词的画面...' }}</p>
       </div>
 
@@ -199,11 +199,26 @@ watch(currentIndex, () => {
 .progress-track { height: 4px; background: rgba(255,255,255,0.08); margin: 0 16px 16px; border-radius: 2px; overflow: hidden; }
 .progress-fill { height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); border-radius: 2px; transition: width 0.4s ease; }
 
-.word-card { margin: 0 16px; background: rgba(30, 41, 59, 0.8); border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+.word-card { margin: 0 16px; background: rgba(30, 41, 59, 0.8); border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); animation: cardEnter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-.image-area { padding: 32px 20px; text-align: center; color: white; }
-.word-emoji { font-size: 72px; display: block; margin-bottom: 12px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3)); }
-.image-desc { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.5; max-width: 280px; margin: 0 auto; }
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateX(30px) scale(0.96); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes cardLeave {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to { opacity: 0; transform: translateX(-30px) scale(0.96); }
+}
+
+.image-area { padding: 28px 20px; text-align: center; color: white; position: relative; overflow: hidden; }
+.word-emoji { font-size: 72px; display: block; margin-bottom: 8px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3)); animation: emojiBounce 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes emojiBounce {
+  0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+  60% { transform: scale(1.1) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.image-desc { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.4; max-width: 280px; margin: 0 auto; }
 
 .word-display { text-align: center; padding: 20px 16px 16px; }
 .the-word { font-size: 32px; font-weight: 900; color: #f1f5f9; margin: 0; }
@@ -230,16 +245,21 @@ watch(currentIndex, () => {
 .nav-btn:active { transform: scale(0.97); }
 .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .nav-btn.prev { background: rgba(255,255,255,0.06); color: #94a3b8; }
-.nav-btn.learn { background: linear-gradient(135deg, #34d399, #10b981); color: #022c22; }
-.nav-btn.learn.learned { background: rgba(52, 211, 153, 0.2); color: #34d399; }
+.nav-btn.learn { background: linear-gradient(135deg, #34d399, #10b981); color: #022c22; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+.nav-btn.learn:active { box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2); }
+.nav-btn.learn.learned { background: rgba(52, 211, 153, 0.15); color: #34d399; box-shadow: none; }
 .nav-btn.next { background: rgba(255,255,255,0.06); color: #94a3b8; text-align: right; }
 
-.story-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 24px; backdrop-filter: blur(4px); }
-.story-card { width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; text-align: center; }
-.story-title { font-size: 18px; font-weight: 800; color: #fbbf24; margin: 0 0 16px; }
+.story-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 24px; backdrop-filter: blur(8px); }
+.story-card { width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 24px; text-align: center; animation: storyPop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+@keyframes storyPop {
+  from { opacity: 0; transform: scale(0.8) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.story-title { font-size: 20px; font-weight: 800; color: #fbbf24; margin: 0 0 16px; }
 .story-content { text-align: left; margin-bottom: 20px; }
 .story-content p { font-size: 14px; color: #cbd5e1; line-height: 1.7; margin: 0 0 12px; }
-.story-btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 16px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #0f172a; margin-bottom: 10px; transition: all 0.15s ease; }
-.story-btn:active { transform: scale(0.97); }
-.story-btn.secondary { background: rgba(255,255,255,0.08); color: #94a3b8; }
+.story-btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 16px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #0f172a; margin-bottom: 10px; transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
+.story-btn:active { transform: scale(0.96); box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2); }
+.story-btn.secondary { background: rgba(255,255,255,0.08); color: #94a3b8; box-shadow: none; }
 </style>
