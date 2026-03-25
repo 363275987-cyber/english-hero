@@ -1,0 +1,253 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { supabase } from '../lib/supabase'
+
+const LEVEL_TITLES = [
+  { level: 1, title: '英语萌新', emoji: '🐣', starsNeeded: 0 },
+  { level: 5, title: '单词猎人', emoji: '🏹', starsNeeded: 100 },
+  { level: 10, title: '拼读达人', emoji: '📖', starsNeeded: 300 },
+  { level: 15, title: '语法高手', emoji: '🧙', starsNeeded: 600 },
+  { level: 20, title: '英语小能手', emoji: '⭐', starsNeeded: 1000 },
+  { level: 30, title: '至尊学霸', emoji: '👑', starsNeeded: 2000 },
+]
+
+const SAVE_KEY = 'english-hero-game'
+const ACTIVE_PIN_KEY = 'english-hero-pin'
+
+function loadLocalState() {
+  try {
+    const saved = localStorage.getItem(SAVE_KEY)
+    return saved ? JSON.parse(saved) : null
+  } catch { return null }
+}
+
+function saveLocalState(state) {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(state))
+}
+
+const defaults = {
+  playerName: '小勇者',
+  totalStars: 0,
+  exp: 0,
+  level: 1,
+  hp: 5,
+  maxHp: 5,
+  streak: 0,
+  lastPlayDate: null,
+  totalPlayDays: 0,
+  totalTimeMinutes: 0,
+  totalWordsLearned: 0,
+  totalBossDefeated: 0,
+  totalCorrect: 0,
+  totalAnswered: 0,
+  weapons: { woodSword: 100, knightSword: 80, spiritBow: 60 },
+  equippedWeapon: 'knightSword',
+  items: { heartApple: 3, bomb: 2 },
+  ownedSkins: [],
+  equippedSkins: { avatar: null, background: null, title: null },
+  giftCoupons: 0,
+  defeatedBosses: [],
+  dailyTasksDone: [],
+  todayStarsEarned: 0,
+}
+
+export const useGameStore = defineStore('game', () => {
+  const saved = loadLocalState()
+  const state = ref(saved || { ...defaults })
+  const pin = ref(localStorage.getItem(ACTIVE_PIN_KEY) || '')
+  const cloudOk = ref(false)
+  let syncTimer = null
+
+  // Check streak
+  if (saved?.lastPlayDate) {
+    const last = new Date(saved.lastPlayDate)
+    const today = new Date()
+    const diffDays = Math.floor((today - last) / 86400000)
+    if (diffDays > 1) state.value.streak = 0
+  }
+
+  function persist() {
+    saveLocalState(state.value)
+    scheduleCloudSync()
+  }
+
+  // ===== Cloud Sync =====
+  function scheduleCloudSync() {
+    if (!pin.value) return
+    clearTimeout(syncTimer)
+    syncTimer = setTimeout(() => cloudPush(), 2000)
+  }
+
+  async function cloudPush() {
+    if (!pin.value) return
+    try {
+      await supabase
+        .from('hero_game_state')
+        .upsert({ pin: pin.value, state: state.value }, { onConflict: 'pin' })
+      cloudOk.value = true
+    } catch (e) {
+      console.warn('Cloud push failed:', e.message)
+    }
+  }
+
+  async function cloudPull() {
+    if (!pin.value) return
+    try {
+      const { data, error } = await supabase
+        .from('hero_game_state')
+        .select('state')
+        .eq('pin', pin.value)
+        .single()
+      if (data?.state) {
+        const cloud = data.state
+        const merged = { ...defaults, ...cloud }
+        if (state.value.lastPlayDate && cloud.lastPlayDate) {
+          if (new Date(state.value.lastPlayDate) > new Date(cloud.lastPlayDate)) {
+            merged.streak = state.value.streak
+            merged.lastPlayDate = state.value.lastPlayDate
+            merged.todayStarsEarned = state.value.todayStarsEarned
+            merged.dailyTasksDone = state.value.dailyTasksDone
+          }
+        }
+        state.value = merged
+        saveLocalState(state.value)
+        cloudOk.value = true
+      }
+    } catch (e) {
+      console.warn('Cloud pull failed:', e.message)
+    }
+  }
+
+  function setPin(newPin) {
+    pin.value = newPin
+    localStorage.setItem(ACTIVE_PIN_KEY, newPin)
+  }
+
+  async function login(newPin, cloudState) {
+    setPin(newPin)
+    if (cloudState && Object.keys(cloudState).length > 0) {
+      const merged = { ...defaults, ...cloudState }
+      if (state.value.totalStars > (cloudState.totalStars || 0)) {
+        saveLocalState(state.value)
+        await cloudPush()
+      } else {
+        state.value = merged
+        saveLocalState(state.value)
+      }
+    } else {
+      await cloudPush()
+    }
+    startAutoSync()
+  }
+
+  function startAutoSync() {
+    setInterval(async () => {
+      if (pin.value) await cloudPull()
+    }, 60000)
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible' && pin.value) {
+        await cloudPull()
+      }
+    })
+  }
+
+  // ===== Computed =====
+  const levelInfo = computed(() => {
+    const current = LEVEL_TITLES.filter(l => l.level <= state.value.level).pop()
+    const next = LEVEL_TITLES.find(l => l.level > state.value.level)
+    return { ...current, next, expToNext: next ? next.starsNeeded - state.value.totalStars : 0 }
+  })
+
+  const correctRate = computed(() => {
+    return state.value.totalAnswered > 0
+      ? Math.round(state.value.totalCorrect / state.value.totalAnswered * 100)
+      : 0
+  })
+
+  const isLoggedIn = computed(() => !!pin.value)
+
+  // ===== Game Actions =====
+  function addStars(n) {
+    state.value.totalStars += n
+    state.value.todayStarsEarned += n
+    const newTitle = [...LEVEL_TITLES].reverse().find(l => state.value.totalStars >= l.starsNeeded)
+    if (newTitle) state.value.level = newTitle.level
+    persist()
+  }
+
+  function recordAnswer(correct) {
+    state.value.totalAnswered++
+    if (correct) state.value.totalCorrect++
+    persist()
+  }
+
+  function takeDamage(n = 1) { state.value.hp = Math.max(0, state.value.hp - n); persist() }
+  function heal(n) { state.value.hp = Math.min(state.value.maxHp, state.value.hp + n); persist() }
+  function fullHeal() { state.value.hp = state.value.maxHp; persist() }
+
+  function addItem(itemId, count = 1) {
+    state.value.items[itemId] = (state.value.items[itemId] || 0) + count
+    persist()
+  }
+
+  function useItem(itemId) {
+    if ((state.value.items[itemId] || 0) > 0) {
+      state.value.items[itemId]--
+      persist()
+      return true
+    }
+    return false
+  }
+
+  function learnWord() { state.value.totalWordsLearned++; persist() }
+
+  function defeatBoss(bossId) {
+    if (!state.value.defeatedBosses.includes(bossId)) {
+      state.value.defeatedBosses.push(bossId)
+      state.value.totalBossDefeated++
+    }
+    persist()
+  }
+
+  function addGiftCoupon() { state.value.giftCoupons++; persist() }
+  function useGiftCoupon() {
+    if (state.value.giftCoupons > 0) { state.value.giftCoupons--; persist(); return true }
+    return false
+  }
+
+  function updateStreak() {
+    const today = new Date().toDateString()
+    if (state.value.lastPlayDate !== today) {
+      const last = state.value.lastPlayDate ? new Date(state.value.lastPlayDate) : null
+      const diff = last ? Math.floor((new Date(today) - last) / 86400000) : 999
+      if (diff <= 1) state.value.streak++
+      else state.value.streak = 1
+      state.value.lastPlayDate = today
+      state.value.totalPlayDays++
+      state.value.todayStarsEarned = 0
+      state.value.dailyTasksDone = []
+      persist()
+    }
+  }
+
+  function addTimeMinutes(min) { state.value.totalTimeMinutes += min; persist() }
+
+  function resetGame() { state.value = { ...defaults }; persist(); cloudPush() }
+
+  function logout() {
+    pin.value = ''
+    localStorage.removeItem(ACTIVE_PIN_KEY)
+    state.value = { ...defaults }
+    saveLocalState(state.value)
+    cloudOk.value = false
+  }
+
+  return {
+    state, pin, levelInfo, correctRate, isLoggedIn, cloudOk,
+    addStars, recordAnswer, takeDamage, heal, fullHeal,
+    addItem, useItem, learnWord, defeatBoss,
+    addGiftCoupon, useGiftCoupon, updateStreak,
+    addTimeMinutes, resetGame, persist,
+    login, logout, setPin, cloudPush, cloudPull, startAutoSync,
+  }
+})
