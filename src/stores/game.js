@@ -174,7 +174,7 @@ export const useGameStore = defineStore('game', () => {
 
     const progress = (wordIdx + 1) / totalWords // 0.06 to 1.0
     const damage = Math.ceil(1 + progress * 7)  // 1-8 damage
-    const maxDur = Math.ceil(3 + progress * 12) // 3-15 durability
+    const maxDur = Math.ceil(5 + progress * 12) // 5-17 durability
 
     if (!state.value.weaponDurabilities[wordId]) {
       state.value.weaponDurabilities[wordId] = { damage, maxDurability: maxDur, currentDurability: maxDur }

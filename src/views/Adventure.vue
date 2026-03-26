@@ -67,7 +67,13 @@
 
           <!-- Module Words Preview -->
           <div v-if="isUnlocked(idx)" class="mt-3 pt-3 border-t border-white/5">
-            <p class="text-xs text-white/30 mb-1.5">本模块单词预览：</p>
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="text-xs text-white/30">单词预览：</p>
+              <button @click.stop="startPractice(mod.module)"
+                      class="text-xs bg-gradient-to-r from-emerald-600 to-emerald-500 text-white px-3 py-1 rounded-lg font-bold active:scale-95 transition-transform">
+                🎮 开始练习
+              </button>
+            </div>
             <div class="flex flex-wrap gap-1">
               <span v-for="word in mod.previewWords" :key="word.id"
                     class="text-xs bg-white/5 px-2 py-0.5 rounded-full text-white/60">
@@ -158,5 +164,9 @@ function allWordsLearned(moduleId) {
 function openBoss(bossId) {
   // v2: Boss随时可挑战，不需要先学完所有单词
   router.push(`/boss/${bossId}`)
+}
+
+function startPractice(moduleId) {
+  router.push(`/practice/${moduleId}`)
 }
 </script>
