@@ -45,6 +45,11 @@ const defaults = {
   moduleProgress: {},
   todayLearned: [],
   customMemoryHints: {},
+  // Combat system (v2: learn to get weapons, combat to defeat bosses)
+  equippedShieldUses: 0,
+  weaponDurabilities: {},
+  recentlyDied: false,
+  deathBossId: null,
 }
 
 export const useGameStore = defineStore('game', () => {
@@ -151,9 +156,57 @@ export const useGameStore = defineStore('game', () => {
     // 更新模块进度
     const modId = extractModuleId(wordId)
     if (modId) updateModuleProgress(modId)
+
+    // === v2: 生成武器数据 ===
+    generateWeaponStats(wordId, modId)
+
     addStars(1)
     checkAchievements()
     persist()
+  }
+
+  // 根据单词位置生成武器属性（越后面的单词越强）
+  function generateWeaponStats(wordId, moduleId) {
+    const moduleWords = allWords.filter(w => w.module === moduleId)
+    const totalWords = moduleWords.length
+    const wordIdx = moduleWords.findIndex(w => w.id === wordId)
+    if (wordIdx < 0) return
+
+    const progress = (wordIdx + 1) / totalWords // 0.06 to 1.0
+    const damage = Math.ceil(1 + progress * 7)  // 1-8 damage
+    const maxDur = Math.ceil(3 + progress * 12) // 3-15 durability
+
+    if (!state.value.weaponDurabilities[wordId]) {
+      state.value.weaponDurabilities[wordId] = { damage, maxDurability: maxDur, currentDurability: maxDur }
+    } else {
+      // Re-learning repairs weapon
+      state.value.weaponDurabilities[wordId].currentDurability = state.value.weaponDurabilities[wordId].maxDurability
+    }
+
+    // Auto-equip if no weapon or this one is better
+    const current = state.value.equippedWeapon
+    if (!current || !state.value.weaponDurabilities[current]) {
+      state.value.equippedWeapon = wordId
+    } else {
+      const currentDmg = state.value.weaponDurabilities[current]?.damage || 0
+      if (damage > currentDmg) {
+        state.value.equippedWeapon = wordId
+      }
+    }
+  }
+
+  // 获取当前装备武器的信息
+  function getEquippedWeaponInfo() {
+    const wid = state.value.equippedWeapon
+    if (!wid) return null
+    const w = allWords.find(w => w.id === wid)
+    const stats = state.value.weaponDurabilities[wid]
+    if (!w || !stats) return null
+    return {
+      wordId: wid, word: w.word, meaning: w.meaning, emoji: w.emoji || '📖',
+      phonetic: w.phonetic, damage: stats.damage,
+      maxDurability: stats.maxDurability, currentDurability: stats.currentDurability,
+    }
   }
 
   // ===== SRS 遗忘曲线参数 =====
@@ -229,28 +282,9 @@ export const useGameStore = defineStore('game', () => {
     }
   })
 
-  // 每日耐久度衰减（SRS 版 — 登录时调用）
+  // 每日耐久度衰减（v2: 已禁用，耐久度只在战斗中消耗）
   function decayAllDurability() {
-    const today = new Date().toDateString()
-    if (state.value.lastDecayDate === today) return
-    state.value.lastDecayDate = today
-    const wp = state.value.wordProgress
-    let forgotten = 0
-    for (const wordId in wp) {
-      if (wp[wordId].status === 'new' || wp[wordId].status === 'forgotten') continue
-      const srsLevel = getSrsLevel(wp[wordId].reviewCount)
-      wp[wordId].durability = Math.max(0, (wp[wordId].durability || 100) - srsLevel.dailyDecay)
-      if (wp[wordId].durability <= 0) {
-        wp[wordId].status = 'forgotten'
-        forgotten++
-        // 更新 moduleProgress
-        const moduleId = extractModuleId(wordId)
-        if (moduleId && state.value.moduleProgress[`m${moduleId}`]) {
-          state.value.moduleProgress[`m${moduleId}`].wordsLearned = Math.max(0, (state.value.moduleProgress[`m${moduleId}`].wordsLearned || 1) - 1)
-        }
-      }
-    }
-    persist()
+    // No-op: durability only decreases during Boss combat, not over time
   }
 
   // 获取需要复习的单词ID列表（SRS 智能调度）
@@ -288,21 +322,17 @@ export const useGameStore = defineStore('game', () => {
     return queue.slice(0, limit).map(q => q.wordId)
   }
 
-  // 复习一个单词（SRS 增强版）
+  // 复习一个单词（v2: 修复武器耐久度）
   function reviewWord(wordId, correct) {
     const wp = state.value.wordProgress
     if (!wp[wordId]) return
     wp[wordId].lastReview = Date.now()
     wp[wordId].reviewCount = (wp[wordId].reviewCount || 0) + 1
     if (correct) {
-      // 答对：耐久度恢复，恢复量随 SRS 等级增加
-      const restoreAmount = 25 + (wp[wordId].reviewCount * 5) // 30, 35, 40, 45...
-      wp[wordId].durability = Math.min(100, (wp[wordId].durability || 50) + restoreAmount)
+      // 修复武器耐久度 +1
+      const wd = state.value.weaponDurabilities[wordId]
+      if (wd) wd.currentDurability = Math.min(wd.maxDurability, wd.currentDurability + 1)
       addStars(1)
-    } else {
-      // 答错：降级 SRS 等级 + 扣耐久
-      wp[wordId].reviewCount = Math.max(0, (wp[wordId].reviewCount || 1) - 1) // 降一级
-      wp[wordId].durability = Math.max(0, (wp[wordId].durability || 50) - 15)
     }
     persist()
   }
@@ -471,6 +501,84 @@ export const useGameStore = defineStore('game', () => {
     cloudOk.value = false
   }
 
+  // ===== v2: Combat Functions =====
+
+  // 用武器攻击Boss（消耗耐久度）
+  function attackBoss() {
+    const wid = state.value.equippedWeapon
+    const wd = state.value.weaponDurabilities[wid]
+    if (!wd || wd.currentDurability <= 0) return { damage: 0, broken: true }
+    wd.currentDurability--
+    const damage = wd.damage
+    persist()
+    return { damage, broken: wd.currentDurability <= 0 }
+  }
+
+  // 使用盾牌防御Boss攻击
+  function useShield() {
+    if (state.value.equippedShieldUses <= 0) return { blocked: false }
+    state.value.equippedShieldUses--
+    persist()
+    return { blocked: true, remaining: state.value.equippedShieldUses }
+  }
+
+  // Boss攻击玩家（无盾牌则掉血）
+  function takeBossDamage() {
+    if (state.value.equippedShieldUses > 0) return { damaged: false }
+    state.value.hp = Math.max(0, state.value.hp - 1)
+    persist()
+    return { damaged: true, hp: state.value.hp, dead: state.value.hp <= 0 }
+  }
+
+  // 玩家死亡
+  function playerDie(bossId) {
+    state.value.recentlyDied = true
+    state.value.deathBossId = bossId
+    // 死亡惩罚：损失一些星星
+    const lost = Math.min(state.value.totalStars, 5)
+    state.value.totalStars -= lost
+    persist()
+    return { lost }
+  }
+
+  // 复活（回到首页后调用）
+  function respawn() {
+    state.value.recentlyDied = false
+    state.value.deathBossId = null
+    state.value.hp = state.value.maxHp
+    persist()
+  }
+
+  // 获得盾牌使用次数
+  function earnShieldUses(n) {
+    state.value.equippedShieldUses += n
+    persist()
+  }
+
+  // 修武器（通过复习）
+  function repairWeapon(wordId) {
+    const wd = state.value.weaponDurabilities[wordId]
+    if (!wd) return false
+    if (wd.currentDurability < wd.maxDurability) {
+      wd.currentDurability++
+      persist()
+      return true
+    }
+    return false
+  }
+
+  // 修所有已损坏的武器（每3个复习词修1点）
+  function repairRandomWeapon() {
+    const broken = Object.entries(state.value.weaponDurabilities)
+      .filter(([_, s]) => s.currentDurability <= 0)
+    if (broken.length === 0) return false
+    const [wid] = broken[Math.floor(Math.random() * broken.length)]
+    const wd = state.value.weaponDurabilities[wid]
+    wd.currentDurability = 1
+    persist()
+    return true
+  }
+
   return {
     state, pin, levelInfo, correctRate, isLoggedIn, cloudOk,
     addStars, recordAnswer, takeDamage, heal, fullHeal,
@@ -492,5 +600,8 @@ export const useGameStore = defineStore('game', () => {
     // Phase 4: 成就 + 礼物
     checkAchievements, getAllAchievements, achievementCount,
     redeemGift,
+    // v2: Combat
+    getEquippedWeaponInfo, attackBoss, useShield, takeBossDamage,
+    playerDie, respawn, earnShieldUses, repairWeapon, repairRandomWeapon,
   }
 })

@@ -2,7 +2,33 @@
   <div class="home-page">
     <!-- IP角色问候区 -->
     <section class="greeting-section">
-      <!-- 新手引导横幅 -->
+      <!-- 死亡指引横幅 -->
+    <section v-if="game.state.recentlyDied" class="death-banner anim-slide-up">
+      <div class="death-icon">💀</div>
+      <div class="death-info">
+        <p class="death-title">装备不够强！</p>
+        <p class="death-hint">去学习新单词获得更强武器，然后回来复仇！</p>
+      </div>
+      <button class="death-dismiss" @click="game.respawn()">知道了</button>
+    </section>
+
+    <!-- 装备状态横幅（有武器时显示） -->
+    <section v-else-if="game.getEquippedWeaponInfo() && !game.state.recentlyDied" class="equip-banner anim-slide-up">
+      <div class="equip-weapon">
+        <span class="equip-emoji">{{ game.getEquippedWeaponInfo().emoji }}</span>
+        <div class="equip-info">
+          <span class="equip-name">{{ game.getEquippedWeaponInfo().word }}</span>
+          <span class="equip-dur">耐久 {{ game.getEquippedWeaponInfo().currentDurability }}/{{ game.getEquippedWeaponInfo().maxDurability }}</span>
+        </div>
+      </div>
+      <div class="equip-shield">
+        <span class="equip-emoji">🛡️</span>
+        <span class="equip-name">盾牌 ×{{ game.state.equippedShieldUses }}</span>
+      </div>
+      <button class="equip-btn" @click="$router.push('/weapons')">🎒 装备</button>
+    </section>
+
+    <!-- 新手引导横幅 -->
       <div v-if="game.state.totalWordsLearned === 0 && game.state.totalBossDefeated === 0" class="newbie-banner">
         <p class="newbie-text">👋 欢迎来到燃学英语！</p>
         <p class="newbie-hint">点击下方「冒险地图」开始你的第一个冒险</p>
@@ -184,6 +210,18 @@ const greetingText = computed(() => {
 .newbie-banner { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.08)); border: 1px solid rgba(245,158,11,0.2); border-radius: 16px; padding: 24px 16px; animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .newbie-text { font-size: 20px; font-weight: 900; color: #fbbf24; margin: 0 0 8px; }
 .newbie-hint { font-size: 14px; color: #cbd5e1; margin: 0; line-height: 1.5; }
+.death-banner { background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.08)); border: 1px solid rgba(239,68,68,0.25); border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 12px; }
+.death-icon { font-size: 36px; }
+.death-info { flex: 1; }
+.death-title { font-size: 16px; font-weight: 800; color: #f87171; margin: 0 0 4px; }
+.death-hint { font-size: 12px; color: #fca5a5; margin: 0; }
+.death-dismiss { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 6px 16px; color: #94a3b8; font-size: 13px; cursor: pointer; font-family: inherit; }
+.equip-banner { background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(99,102,241,0.06)); border: 1px solid rgba(99,102,241,0.2); border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 12px; }
+.equip-weapon, .equip-shield { display: flex; align-items: center; gap: 8px; flex: 1; }
+.equip-emoji { font-size: 28px; }
+.equip-name { font-size: 13px; font-weight: 700; color: #e2e8f0; }
+.equip-dur { font-size: 11px; color: #94a3b8; }
+.equip-btn { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.25); border-radius: 12px; padding: 8px 16px; color: #a5b4fc; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .fairy-avatar { font-size: 56px; line-height: 1; margin-bottom: 12px; filter: drop-shadow(0 0 16px rgba(52, 211, 153, 0.5)); animation: float 3s ease-in-out infinite; }
 .greeting-text { font-size: 18px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
 .greeting-sub { font-size: 13px; color: rgba(226, 232, 240, 0.6); }

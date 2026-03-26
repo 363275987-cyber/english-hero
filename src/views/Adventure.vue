@@ -18,7 +18,7 @@
         </div>
 
         <!-- Module Card -->
-        <button @click="openBoss(mod.bossId, mod.module)"
+        <button @click="openBoss(mod.bossId)"
                 class="w-full card-dark transition-all active:scale-[0.97]"
                 :class="isUnlocked(idx) ? 'border-amber-500/40' : 'border-white/5 opacity-50'">
 
@@ -55,7 +55,7 @@
           <div v-if="isUnlocked(idx) && mod.miniBosses.length" class="mt-3 pt-3 border-t border-white/5">
             <div class="flex gap-2">
               <button v-for="mini in mod.miniBosses" :key="mini.id"
-                      @click.stop="openBoss(mini.id, mod.module)"
+                      @click.stop="openBoss(mini.id)"
                       class="flex items-center gap-1.5 bg-white/5 rounded-lg px-2.5 py-1.5 text-xs border border-white/5 active:scale-[0.97] transition-transform"
                       :class="isDefeated(mini.id) ? 'opacity-50' : ''">
                 <span>{{ mini.emoji }}</span>
@@ -155,14 +155,8 @@ function allWordsLearned(moduleId) {
   return words.length > 0 && words.every(w => game.state.wordProgress[w.id]?.status === 'learned')
 }
 
-function openBoss(bossId, moduleId) {
-  // 检查是否已学完该模块单词
-  const moduleWords = getWordsByModule(moduleId)
-  const learnedCount = moduleWords.filter(w => game.state.wordProgress[w.id]?.status === 'learned').length
-  if (learnedCount < moduleWords.length) {
-    router.push(`/intro/${moduleId}`)
-    return
-  }
+function openBoss(bossId) {
+  // v2: Boss随时可挑战，不需要先学完所有单词
   router.push(`/boss/${bossId}`)
 }
 </script>
