@@ -16,6 +16,8 @@ const routes = [
   { path: '/assessment', name: 'Assessment', component: () => import('../views/AssessmentPage.vue') },
   { path: '/shop', name: 'Shop', component: () => import('../views/Shop.vue') },
   { path: '/profile', name: 'Profile', component: () => import('../views/Profile.vue') },
+  { path: '/chant/:moduleId', name: 'ChantChallenge', component: () => import('../views/ChantChallenge.vue') },
+  { path: '/dialogue/:moduleId', name: 'DialogueTheater', component: () => import('../views/DialogueTheater.vue') },
 ]
 
 export default createRouter({
