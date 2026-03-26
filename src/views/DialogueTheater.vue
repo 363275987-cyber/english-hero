@@ -200,19 +200,39 @@ function speak(text) {
 
 // Generate wrong options for roleplay
 function generateRoleplayOptions(dialogue, lineIdx) {
-  const allS2Lines = dialogue.lines
-    .map((l, i) => ({ ...parseLine(l), idx: i }))
-    .filter(m => m && m.role === 'S2' && m.idx !== lineIdx)
-
   const correct = parseLine(dialogue.lines[lineIdx])
   if (!correct) return []
+
+  // Collect all S2 lines from ALL dialogues (not just current one) for more variety
+  const allS2Lines = []
+  for (const d of dialogues.value) {
+    for (let i = 0; i < d.lines.length; i++) {
+      const p = parseLine(d.lines[i])
+      if (p && p.role === 'S2' && p.english !== correct.english) {
+        allS2Lines.push(p)
+      }
+    }
+  }
 
   const options = [{ english: correct.english, correct: true, selected: false }]
   const shuffled = allS2Lines.sort(() => Math.random() - 0.5)
   for (const w of shuffled) {
     if (options.length >= 3) break
-    if (w.english !== correct.english) {
+    // Make sure wrong options are reasonably different
+    if (w.english.length > 10 && w.english !== correct.english) {
       options.push({ english: w.english, correct: false, selected: false })
+    }
+  }
+  // If not enough options, generate plausible wrong answers
+  while (options.length < 4) {
+    // Common wrong patterns
+    const wrongPatterns = [
+      "I don't know.", "I like it very much.", "That's interesting!",
+      "I'm a student.", "Nice to meet you!", "Sounds great!",
+    ]
+    const pattern = wrongPatterns[options.length - 1]
+    if (!options.find(o => o.english === pattern)) {
+      options.push({ english: pattern, correct: false, selected: false })
     }
   }
   return options.sort(() => Math.random() - 0.5)
@@ -220,13 +240,21 @@ function generateRoleplayOptions(dialogue, lineIdx) {
 
 // Generate fill-in-the-blank
 function generateFillBlank(msg) {
-  const words = msg.english.split(/\s+/).filter(w => w.length > 3 && /^[a-zA-Z]+$/.test(w))
-  if (words.length === 0) return msg
-
-  const target = words[Math.floor(Math.random() * words.length)]
   const moduleWords = getWordsByModule(moduleId)
+  const wordList = moduleWords.map(w => w.word)
+
+  // Find which words in the sentence are in the module word list
+  const matchedWords = msg.english.split(/\s+/).filter(w =>
+    w.length > 2 && /^[a-zA-Z]+$/.test(w) && wordList.some(mw => mw.toLowerCase() === w.toLowerCase())
+  )
+
+  if (matchedWords.length === 0) return msg
+
+  const target = matchedWords[Math.floor(Math.random() * matchedWords.length)]
+
+  // Wrong options: from same module, same word length (±2 chars)
   const wrongOpts = moduleWords
-    .filter(w => w.word.toLowerCase() !== target.toLowerCase())
+    .filter(w => w.word.toLowerCase() !== target.toLowerCase() && Math.abs(w.word.length - target.length) <= 3)
     .sort(() => Math.random() - 0.5)
     .slice(0, 3)
     .map(w => w.word)

@@ -122,6 +122,7 @@
       <!-- Step 4: Context Practice -->
       <div v-else-if="currentStep === 4" class="step-card anim-slide-up" :key="'step4-' + currentWord.id">
         <h3 class="step4-title">📖 语境运用</h3>
+        <p class="context-hint" v-if="contextHint">💡 {{ contextHint }}</p>
         <div class="context-card">
           <p class="context-prompt">{{ contextQuestion }}</p>
           <div class="context-options">
@@ -168,6 +169,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useGameStore } from '../stores/game'
 import { getWordsByModule } from '../data/words'
+import { moduleContent } from '../data/content'
 
 const router = useRouter()
 const route = useRoute()
@@ -335,21 +337,65 @@ watch(currentStep, (val) => {
   }
 })
 
-// ===== Step 4: Context =====
-const contextQuestion = computed(() => {
-  if (!currentWord.value) return ''
-  return `"${currentWord.value.word}" 的中文是什么？（看中文选英文）`
-})
-
+// ===== Step 4: Context (from dialogue data) =====
+const contextQuestion = ref('')
 const contextOptions = ref([])
-const contextCorrectAnswer = computed(() => currentWord.value?.word || '')
+const contextCorrectAnswer = ref('')
+const contextHint = ref('')
 
 function buildContextOptions() {
-  if (!currentWord.value) { contextOptions.value = []; return }
-  const correct = currentWord.value.word
-  const pool = words.value.filter(w => w.word !== correct).map(w => w.word)
-  const others = shuffle(pool).slice(0, 3)
-  contextOptions.value = shuffle([...others, correct])
+  if (!currentWord.value) { contextQuestion.value = ''; contextOptions.value = []; return }
+
+  const word = currentWord.value
+  const dialogues = moduleContent[moduleId]?.dialogues || []
+
+  // Try to find a sentence containing this word from dialogues
+  let foundLine = null
+  for (const d of dialogues) {
+    for (const line of d.lines) {
+      // Check if the word appears in the English part
+      const englishMatch = line.match(/^(S\d):\s*(.+?)(?:（|$)/)
+      if (englishMatch) {
+        const eng = englishMatch[1]
+        // Case-insensitive check for word.word as a whole word
+        const regex = new RegExp(`\\b${word.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+        if (regex.test(eng)) {
+          foundLine = eng
+          break
+        }
+      }
+    }
+    if (foundLine) break
+  }
+
+  if (foundLine) {
+    // Create a fill-in-the-blank question
+    const blanked = foundLine.replace(
+      new RegExp(`\\b(${word.word})\\b`, 'i'),
+      '___'
+    )
+    contextQuestion.value = blanked
+    contextCorrectAnswer.value = word.word
+    contextHint.value = `"${word.word}" = ${word.meaning}`
+
+    // Generate wrong options from same module words
+    const pool = getWordsByModule(moduleId)
+      .filter(w => w.word !== word.word && w.word.length > 2)
+      .map(w => w.word)
+    const others = shuffle(pool).slice(0, 3)
+    contextOptions.value = shuffle([...others, word.word])
+  } else {
+    // Fallback: simple translation question
+    contextQuestion.value = `"${word.meaning}" 的英文是什么？`
+    contextCorrectAnswer.value = word.word
+    contextHint.value = `提示：${word.phonetic}`
+
+    const pool = getWordsByModule(moduleId)
+      .filter(w => w.word !== word.word)
+      .map(w => w.word)
+    const others = shuffle(pool).slice(0, 3)
+    contextOptions.value = shuffle([...others, word.word])
+  }
 }
 
 function answerContext(opt) {
@@ -451,7 +497,7 @@ function closeGasStation() {
 
 // ===== Navigation =====
 function goBack() { router.push('/adventure') }
-function goToChant() { router.push('/grammar') }
+function goToChant() { router.push('/chant/' + moduleId) }
 function goToBoss() { router.push('/boss/' + moduleInfo.value.bossId) }
 function goHome() { router.push('/home') }
 
@@ -612,6 +658,7 @@ onUnmounted(() => {
 
 /* ===== Step 4: Context ===== */
 .step4-title { font-size: 18px; font-weight: 800; color: #e2e8f0; margin: 0; padding: 20px 16px 0; text-align: center; }
+.context-hint { font-size: 12px; color: #fbbf24; text-align: center; margin: 0 16px 12px; }
 .context-card { padding: 16px; }
 .context-prompt { font-size: 15px; color: #cbd5e1; line-height: 1.6; margin: 0 0 16px; text-align: center; }
 .context-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
