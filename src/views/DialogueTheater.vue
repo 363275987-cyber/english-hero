@@ -142,6 +142,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useGameStore } from '../stores/game'
 import { moduleContent } from '../data/content'
 import { getWordsByModule } from '../data/words'
+import { speak as youdaoSpeak } from '../lib/tts'
 
 const router = useRouter()
 const route = useRoute()
@@ -186,16 +187,6 @@ function parseLine(line) {
 function extractChinese(line) {
   const match = line.match(/（(.+?)）/)
   return match ? match[1] : ''
-}
-
-// Speak English text
-function speak(text) {
-  if ('speechSynthesis' in window) {
-    speechSynthesis.cancel()
-    const u = new SpeechSynthesisUtterance(text)
-    u.lang = 'en-US'; u.rate = 0.8
-    speechSynthesis.speak(u)
-  }
 }
 
 // Generate wrong options for roleplay
@@ -328,7 +319,7 @@ function answerRoleplay(msgIdx, optIdx) {
     game.addStars(1)
     earnedStars.value++
     game.recordAnswer(true)
-    speak(msg.english)
+    youdaoSpeak(msg.english)
   } else {
     game.recordAnswer(false)
   }
@@ -349,7 +340,7 @@ function answerFill(msgIdx, optIdx) {
     game.addStars(2)
     earnedStars.value += 2
     game.recordAnswer(true)
-    speak(msg.english)
+    youdaoSpeak(msg.english)
   } else {
     game.recordAnswer(false)
   }

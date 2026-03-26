@@ -110,10 +110,10 @@
           <div class="reveal-sentence-box anim-slide-up stagger-2">
             <span class="reveal-label">📝 趣味例句</span>
             <p class="reveal-sentence-text">{{ currentWord.funSentence || currentWord.example }}</p>
-            <button class="listen-small-btn" @click="speakText(currentWord.funSentence || currentWord.example)">🔊 听例句</button>
+            <button class="listen-small-btn" @click="playSentenceAudio(currentWord.id)">🔊 听例句</button>
           </div>
           <div class="reveal-actions">
-            <button class="listen-small-btn" @click="speakText(currentWord.word)">🔊 听单词</button>
+            <button class="listen-small-btn" @click="playWordAudio(currentWord.id)">🔊 听单词</button>
             <button class="reveal-next-btn" @click="goStep(4)">我记住了 →</button>
           </div>
         </div>
@@ -170,6 +170,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useGameStore } from '../stores/game'
 import { getWordsByModule } from '../data/words'
 import { moduleContent } from '../data/content'
+import { speakWord as playWordAudio, speakSentence as playSentenceAudio } from '../lib/tts'
 
 const router = useRouter()
 const route = useRoute()
@@ -250,8 +251,9 @@ function getEmoji(word) {
   return emojiMap[key] || '📖'
 }
 
-// ===== TTS =====
+// ===== TTS (use pre-recorded native audio) =====
 function speakText(text) {
+  // This is only used as fallback for non-word text
   if (!text || !window.speechSynthesis) return
   window.speechSynthesis.cancel()
   const u = new SpeechSynthesisUtterance(text)
@@ -261,7 +263,7 @@ function speakText(text) {
 }
 
 function playPronunciation() {
-  if (currentWord.value) speakText(currentWord.value.word)
+  if (currentWord.value) playWordAudio(currentWord.value.id)
 }
 
 // ===== Utilities =====
@@ -328,7 +330,7 @@ watch(currentStep, (val) => {
   }
   if (val === 2) {
     nextTick(() => {
-      setTimeout(() => playPronunciation(), 300)
+      setTimeout(() => playWordAudio(currentWord.value?.id), 300)
     })
     clearTimeout(autoNextTimer)
     autoNextTimer = setTimeout(() => {
