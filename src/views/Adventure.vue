@@ -160,7 +160,7 @@ function openBoss(bossId, moduleId) {
   const moduleWords = getWordsByModule(moduleId)
   const learnedCount = moduleWords.filter(w => game.state.wordProgress[w.id]?.status === 'learned').length
   if (learnedCount < moduleWords.length) {
-    router.push(`/learn/${moduleId}`)
+    router.push(`/intro/${moduleId}`)
     return
   }
   router.push(`/boss/${bossId}`)
