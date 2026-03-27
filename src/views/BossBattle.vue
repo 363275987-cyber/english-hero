@@ -23,9 +23,10 @@
         </div>
       </div>
 
-      <!-- Boss Emoji -->
+      <!-- Boss Illustration -->
       <div class="boss-emoji-wrap" :class="{ 'boss-shake': isBossHit, 'boss-attack-anim': isBossAttacking }">
-        <span class="boss-emoji">{{ bossData.emoji }}</span>
+        <img v-if="bossImage" :src="bossImage" :alt="bossData.name" class="boss-img" />
+        <span v-else class="boss-emoji">{{ bossData.emoji }}</span>
       </div>
 
       <!-- Damage Float -->
@@ -115,6 +116,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useGameStore } from '../stores/game'
 import { allBosses } from '../data/bosses'
+import { sfx } from '../lib/sfx'
 
 const router = useRouter()
 const route = useRoute()
@@ -122,6 +124,10 @@ const game = useGameStore()
 
 const bossId = route.params.bossId || 'm1_boss'
 const rawBoss = allBosses[bossId] || allBosses.m1_boss
+const bossImage = computed(() => {
+  const id = rawBoss?.id
+  return id ? `/assets/bosses/${id}.jpg` : null
+})
 const bossData = computed(() => ({
   ...rawBoss,
   maxHp: rawBoss.hp,
@@ -235,6 +241,7 @@ function bossAttacks() {
 
   isBossAttacking.value = true
   dialogueText.value = bossData.value.dialogues.attack
+  sfx.bossAttack()
 
   // Auto shield: if player has shields, auto-use
   const shield = game.useShield()
@@ -242,6 +249,7 @@ function bossAttacks() {
     isDefending.value = true
     dialogueText.value = '🛡️ 挡住了！'
     showFloatText('🛡️ BLOCKED!', 'float-shield')
+    sfx.shieldBlock()
   } else {
     const result = game.takeBossDamage()
     if (result.dead) {
@@ -270,6 +278,7 @@ function playerAttack() {
   const result = game.attackBoss()
   if (!result) {
     weaponBroken.value = true
+    sfx.weaponBreak()
     return
   }
 
@@ -297,6 +306,7 @@ function playerAttack() {
   game.saveBossHp(bossId, bossHp.value)
   showFloatText(`-${result.damage} ⚔️`, 'float-attack')
   triggerBossHit()
+  sfx.hitBoss()
   dialogueText.value = bossData.value.dialogues.hit
 
   setTimeout(() => {
